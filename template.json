@@ -1,0 +1,63 @@
+{
+  "variables": {
+    "iso_url": "",
+    "iso_checksum": "",
+    "rhn_username": "",
+    "rhn_password": "",
+    "subscription_pool_id": ""
+  },
+  "builders": [
+    {
+      "type": "virtualbox-iso",
+      "guest_os_type": "RedHat_64",
+      "guest_additions_mode": "disable",
+      "iso_url": "{{user `iso_url`}}",
+      "iso_checksum": "{{user `iso_checksum`}}",
+      "iso_checksum_type": "sha256",
+      "ssh_username": "root",
+      "ssh_password": "RedHat1",
+      "ssh_wait_timeout": "1500s",
+      "boot_command": [
+        "<tab> text ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks.cfg<enter><wait>"
+      ],
+      "http_directory": "./",
+      "disk_size": 16384,
+      "memory": 2048,
+      "headless": true,
+      "shutdown_command": "sudo -S shutdown -P now"
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "inline": [
+        "subscription-manager register --username={{user `rhn_username`}} --password={{user `rhn_password`}} --auto-attach --force"
+      ],
+      "only": [
+        "virtualbox-iso"
+      ]
+    },
+    {
+      "type": "shell",
+      "script": "provisioners/00_yum-update.sh",
+      "expect_disconnect": true,
+      "only": [
+        "virtualbox-iso"
+      ]
+    },
+    {
+      "type": "shell",
+      "script": "provisioners/01_lis-install.sh",
+      "only": [
+        "virtualbox-iso"
+      ]
+    },
+    {
+      "type": "shell",
+      "script": "provisioners/02_provision.sh",
+      "only": [
+        "virtualbox-iso"
+      ]
+    }
+  ]
+}
